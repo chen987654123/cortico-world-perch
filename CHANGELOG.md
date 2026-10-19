@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.4
+
+- Added `repository`, `homepage` and `bugs`, so the market and npm can link back to the source.
+- No behaviour change.
+
 ## 0.2.3
 
 Roaming jumps actually leave the ground now.

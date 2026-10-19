@@ -1,10 +1,18 @@
 {
   "name": "cortico-world-perch",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Coo walks along the top edge of any window and thunder-jumps between windows and the desktop floor.",
   "type": "module",
   "main": "./src/index.js",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chen987654123/cortico-world-perch.git"
+  },
+  "homepage": "https://github.com/chen987654123/cortico-world-perch#readme",
+  "bugs": {
+    "url": "https://github.com/chen987654123/cortico-world-perch/issues"
+  },
   "keywords": ["cortico", "cortico-world", "world", "companion", "desktop-pet", "windows", "coopanion"],
   "os": ["win32"],
   "engines": {
