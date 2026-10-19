@@ -1,6 +1,6 @@
 {
   "name": "cortico-world-perch",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Coo walks along the top edge of any window and thunder-jumps between windows and the desktop floor.",
   "type": "module",
   "main": "./src/index.js",
@@ -33,7 +33,7 @@
     "kind": "world",
     "api": 6,
     "displayName": "雷霆大跳",
-    "icon": "assets/icon.svg",
+    "icon": "assets/icon.png",
     "describe": "describe.json",
     "tags": ["apps", "external-setup", "experimental", "sensitive-data"],
     "locales": {

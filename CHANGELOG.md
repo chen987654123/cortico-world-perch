@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.5
+
+- New icon: the pet's face instead of the drawn placeholder. No behaviour change.
+
 ## 0.2.4
 
 - Added `repository`, `homepage` and `bugs`, so the market and npm can link back to the source.
