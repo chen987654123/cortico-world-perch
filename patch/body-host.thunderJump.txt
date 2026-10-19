@@ -1,0 +1,7 @@
+      thunderJump: (x, y, apex) => {
+        // This bridge is asynchronous, but we can still reject commands that would be silently
+        // ignored by the body while it is airborne, crouching, or being dragged.
+        if (!ready || !layout || ['air', 'crouch', 'drag'].includes(layout.mode)) return false;
+        post({ t: 'thunder-jump', x, y, apex });
+        return true;
+      },

@@ -1,0 +1,2 @@
+  /** Physical virtual-screen origin and scale for page coordinates on the display the window covers. */
+  onScreen: (cb) => ipcRenderer.on('pet:screen', (_e, screen) => cb(screen)),

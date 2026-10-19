@@ -1,0 +1,8 @@
+    // Local patch (cortico-world-perch): pass the last jump's aim through to the page.
+    roam: l.roam && typeof l.roam === 'object'
+      ? { kind: String(l.roam.kind ?? ''), fromX: num(l.roam.fromX), fromY: num(l.roam.fromY), toX: num(l.roam.toX), toY: num(l.roam.toY), at: num(l.roam.at) }
+      : null,
+    // Local patch (cortico-world-perch): why the last roaming jump happened, and the terrain it saw.
+    diag: l.diag && typeof l.diag === 'object'
+      ? { hopWhy: String(l.diag.hopWhy ?? ''), fy: num(l.diag.fy), plats: Array.isArray(l.diag.plats) ? l.diag.plats : [] }
+      : null,

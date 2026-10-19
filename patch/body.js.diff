@@ -1,0 +1,423 @@
+--- "D:/Program Files/coopanion/resources/app/node_modules/cortico-world-desktop-pet/web/kit/body.js.bak"	2026-10-18 20:18:52.723774200 +0800
++++ "D:/Program Files/coopanion/resources/app/node_modules/cortico-world-desktop-pet/web/kit/body.js"	2026-10-19 16:58:25.044241900 +0800
+@@ -132,9 +132,38 @@
+   const onEvent = opts.onEvent || (() => {});
+   const words = opts.words || {};
+   let W = 0, H = 0, floorY = 0, S = .42, T = 0;
++  /**
++   * Local patch (cortico-world-perch): the tops of the windows under the pet, as
++   * [{ y, spans: [[x0, x1], ...] }] in stage pixels. Empty when no terrain service is running,
++   * and then every surface is the floor, exactly as before.
++   */
++  const platforms = () => opts.bounds().platforms ?? [];
++  /** The highest platform top at or below `from` under stage x; null when only the floor is there. */
++  function platformAt(x, from) {
++    let best = null;
++    for (const p of platforms()) {
++      if (!(p.y >= from - .5)) continue;
++      if (best && p.y >= best.y) continue;
++      for (const span of p.spans ?? []) {
++        if (x >= span[0] && x <= span[1]) { best = p; break; }
++      }
++    }
++    return best;
++  }
++  /** The first surface at or below `from` under stage x: a window top when one is there, else the floor. */
++  function groundAt(x, from) {
++    return platformAt(x, from)?.y ?? floorY;
++  }
++  /** The window the pet stands on, so dragging that window can carry the pet along with it. */
++  let standing = null;
++  function rememberStanding() {
++    standing = platformAt(pet.x, pet.fy - 2);
++  }
+   let roam = opts.roam ?? 'free';
+   let skin = opts.skin || null;
+   let hold = 0; // until T: an order from outside is in progress, free roaming waits
++  /** Local patch (cortico-world-perch): the console's feature switches, applied live. */
++  let perchFeatures = {};
+   const pet = {
+     x: 260, fy: 0, vx: 0, vy: 0, facing: 1, faceVis: 1, mode: 'idle', modeT: 0, dur: 0, target: 0,
+     speed: 0, stride: 0, lift: 0, bob: 0, phase: 0, lastHalf: 0, lean: 0, tilt: 0, tiltV: 0,
+@@ -166,7 +195,32 @@
+     }
+     pet.x = clamp(pet.x, minX(), maxX());
+     pet.target = clamp(pet.target, minX(), maxX());
+-    if (pet.mode !== 'air' && pet.mode !== 'drag') pet.fy = floorY;
++    // 1) a window that is being dragged carries the pet standing on it
++    if (standing?.id && pet.mode !== 'air' && pet.mode !== 'drag') {
++      const now = platforms().find((p) => p.id === standing.id);
++      if (now) {
++        const dx = (now.x0 ?? standing.x0) - (standing.x0 ?? 0);
++        if (dx) { pet.x += dx; pet.target += dx; }
++        pet.fy = now.y;
++        standing = now;
++      } else standing = null;
++    }
++    // 2) keep the pet on the surface under it: gone (window closed, edge covered, walked off) means
++    //    it falls; a window top appearing under the floor never lifts it. Getting onto a window by
++    //    itself is the hop, or a drop from above by hand.
++    if (pet.mode !== 'air' && pet.mode !== 'drag') {
++      if (!(pet.fy > 0)) pet.fy = floorY;   // first frame: start on the floor, not on the highest top
++      const p = platformAt(pet.x, pet.fy - 2);
++      if (!p) {
++        // nothing under the pet any more: a window closed, its edge got covered, or it was dragged
++        // above the top of the screen. Fall from where it is — never snap down to the floor.
++        if (pet.fy < floorY - 12) { pet.vy = 0; pet.vx = 0; pet.airKind = 'drop'; setMode('air'); }
++        else pet.fy = floorY;
++        standing = null;
++      }
++      else if (p.y > pet.fy + 12) { pet.vy = 0; pet.vx = 0; pet.airKind = 'drop'; setMode('air'); standing = null; }
++      else if (p.y >= pet.fy - 12) { pet.fy = p.y; standing = p; }
++    }
+   }
+ 
+   function toStage(lx, ly) {
+@@ -214,7 +268,36 @@
+       case 'stand': setMode(seated ? 'wake' : 'idle', seated ? { startle: false } : {}); pet.nextAt = T + 3; break;
+       case 'walk': setMode('walk', { target: pickTarget(160) }); break;
+       case 'run': setMode('run', { target: pet.x < W / 2 ? maxX() - rnd(0, 30) : minX() + rnd(0, 30) }); break;
+-      case 'jump': setMode('crouch', { jumpV: 720, jumpVx: pet.facing * 40 }); break;
++      // Local patch (cortico-world-perch): her own roam jump travels. A fixed launch speed only ever
++      // reads as a bob in place; aim at a landing spot instead so an idle jump covers ground — or,
++      // when a window top sits within reach above, lands up on it.
++      case 'jump': {
++        // the console can turn roaming jumps off: then she simply picks something else to do
++        if (perchFeatures.autoRoamingJumps === false) { setMode('idle'); pet.nextAt = T + rnd(1, 2); break; }
++        // last resort: even then the jump goes somewhere on the floor, never straight up
++        if (!(tryHopUp() || hopToReach())) {
++          // Aim across the screen, not where she happens to face: at the left edge facing left the
++          // old clamp put the landing spot back on her own feet, which read as a jump in place.
++          const step = rnd(150, 240);
++          const roomRight = maxX() - pet.x, roomLeft = pet.x - minX();
++          let dir = roomRight >= roomLeft ? 1 : -1;
++          let tx = clamp(pet.x + dir * step, minX(), maxX());
++          if (Math.abs(tx - pet.x) < 120) {
++            dir = -dir;
++            tx = clamp(pet.x + dir * step, minX(), maxX());
++          }
++          if (Math.abs(tx - pet.x) >= 120) {
++            pet.hopWhy = 'floor';
++            jumpTo(tx, floorY, 110);
++          } else {
++            setMode('idle');
++            pet.nextAt = T + rnd(1, 2);
++          }
++        } else {
++          pet.hopWhy = 'jumped';
++        }
++        break;
++      }
+       case 'hop': setMode('crouch', { jumpV: 480, jumpVx: 0 }); break;
+       case 'look': setMode('look'); break;
+       case 'turn': if (!seated) setMode('idle'); pet.facing *= -1; play('tick', 'move'); break;
+@@ -320,9 +403,195 @@
+     return 'neutral';
+   }
+ 
++  /**
++   * Local patch (cortico-world-perch): every so often, jump up to a window top above the pet.
++   * The arc is chosen so the apex clears the target by ~70px and the horizontal speed carries it
++   * onto the middle of that top; the air integration sheds horizontal speed, which is compensated.
++   */
++  let hopAt = 0;
++  /** Local patch (cortico-world-perch): the reason a roaming jump did not leave the ground. */
++  const noJump = (why) => { pet.hopWhy = why; return false; };
++  function tryHopUp() {
++    if (perchFeatures.autoWindowHops === false) return noJump('hops off');
++    // `hold` is the time up to which she must stay put, not a flag: `hold > 0` is true for ever
++    // once the page has set it once, which used to disable every roaming jump.
++    if (pet.fy < 60 || T < hold) return noJump('held');
++    // never launch from the very edge: reaching an edge should read as falling off, not jumping off
++    const here = platformAt(pet.x, pet.fy - 2);
++    const hereSpan = here ? (here.spans ?? []).find(([a, b]) => pet.x >= a && pet.x <= b) : null;
++    if (hereSpan && (pet.x - hereSpan[0] < 70 || hereSpan[1] - pet.x < 70)) return noJump('edge');
++    const G2 = 2300;
++    let best = null;
++    for (const p of platforms()) {
++      const h = pet.fy - p.y;
++      // 1700 covers a 1920-tall portrait screen: the window tops there sit ~1400 above the floor.
++      if (h < 70 || h > 1700) continue;
++      const span = (p.spans ?? []).filter(([a, b]) => b - a >= 140).sort((a, b) => b[1] - b[0])[0];
++      if (!span) continue;
++      // A landing spot straight above reads as a bob on the spot: land somewhere along the top,
++      // at least a body and a half away, preferring the end that is farther out.
++      const left = span[0] + 24, right = span[1] - 24;
++      let tx = clamp(pet.x, left, right);
++      if (Math.abs(tx - pet.x) < 120) tx = Math.abs(left - pet.x) > Math.abs(right - pet.x) ? left : right;
++      if (Math.abs(tx - pet.x) < 90) continue;
++      const v = Math.sqrt(2 * G2 * (h + 70));
++      const disc = v * v - 2 * G2 * h;
++      if (disc <= 0) continue;
++      const t = (v + Math.sqrt(disc)) / G2;
++      const vx = (tx - pet.x) * .4 / (1 - Math.exp(-.4 * t));
++      if (Math.abs(vx) > 1100) continue;
++      // prefer a reachable top that is not too high, with a little randomness so it is not always the same
++      const score = Math.random() - h / 1600;
++      if (!best || score > best.score) best = { v, vx, score, tx, ty: p.y };
++    }
++    if (!best) return noJump('no top');
++    pet.lastRoam = { kind: 'window', fromX: Math.round(pet.x), fromY: Math.round(pet.fy), toX: Math.round(best.tx), toY: Math.round(best.ty), at: Math.round(T * 1000) };
++    pet.jumpV = Math.min(best.v, 2900);
++    pet.jumpVx = best.vx;
++    faceJumpDirection(best.vx);
++    setMode('crouch', { jumpV: pet.jumpV, jumpVx: pet.jumpVx });
++    return true;
++  }
++
++  /** Turn toward the horizontal launch direction before the jump pose begins. */
++  function faceJumpDirection(vx) {
++    if (vx > 1) pet.facing = pet.faceVis = 1;
++    else if (vx < -1) pet.facing = pet.faceVis = -1;
++  }
++
++  /**
++   * Local patch (cortico-world-perch): a free super jump. Leave the ground now and come down at
++   * stage point (tx, ty); `apex` is how high above the higher of the two ends it should climb.
++   * Anywhere is a legal target — coming down in mid-air just means falling from there to the first
++   * surface below, so it can go as high and as far as asked.
++   */
++  function jumpTo(tx, ty, apex) {
++    if (!Number.isFinite(tx) || !Number.isFinite(ty)) return false;
++    if (pet.mode === 'drag') return false;
++    const G2 = 2300, x0 = pet.x, y0 = pet.fy;
++    const rise = y0 - ty;                                   // > 0 when the target is above
++    const head = Math.max(Math.max(0, rise) + 70, Number.isFinite(apex) ? apex : 0, 70);
++    const u = Math.sqrt(2 * G2 * head);
++    const disc = u * u - 2 * G2 * rise;
++    if (disc < 0) return false;
++    const t = (u + Math.sqrt(disc)) / G2;
++    const vx = (tx - x0) * .4 / (1 - Math.exp(-.4 * t));
++    pet.vy = -u;
++    pet.vx = clamp(vx, -2600, 2600);
++    pet.lastRoam = { kind: 'command', fromX: Math.round(x0), fromY: Math.round(y0), toX: Math.round(tx), toY: Math.round(ty), at: Math.round(T * 1000) };
++    faceJumpDirection(pet.vx);
++    pet.airKind = 'jump';
++    pet.sqv -= 1.6;
++    setMode('air');
++    play('jump', 'move');
++    return true;
++  }
++
++  /**
++   * Local patch (cortico-world-perch): the edge of a window top is not a cliff — the pet leaps off
++   * it, aiming at the nearest other window top (or the bottom of the desktop) in the direction it
++   * was walking. False when nothing is within reach, and then it just falls.
++   */
++  function leapFromEdge(dir) {
++    if (perchFeatures.edgeLeaps === false) return false;
++    const y0 = pet.fy, x0 = pet.x, G2 = 2300;
++    const cands = [];
++    for (const p of platforms()) {
++      for (const [a, b] of p.spans ?? []) {
++        if (b - a < 80) continue;
++        const tx = clamp(x0 + dir * 140, a + 26, b - 26);
++        if ((tx - x0) * dir < 40) continue;
++        if (Math.abs(tx - x0) > 560) continue;
++        cands.push({ tx, ty: p.y });
++      }
++    }
++    cands.push({ tx: clamp(x0 + dir * rnd(90, 280), minX(), maxX()), ty: floorY });
++    cands.sort((c1, c2) => (Math.abs(c1.ty - y0) + Math.abs(c1.tx - x0) * .3)
++      - (Math.abs(c2.ty - y0) + Math.abs(c2.tx - x0) * .3));
++    const pick = cands[Math.min(cands.length - 1, Math.floor(Math.random() * Math.min(3, cands.length)))];
++    const rise = y0 - pick.ty;
++    const u = Math.sqrt(2 * G2 * (Math.max(0, rise) + 60));
++    const disc = u * u - 2 * G2 * rise;
++    if (disc < 0) return false;
++    const t = (u + Math.sqrt(disc)) / G2;
++    const vx = (pick.tx - x0) * .4 / (1 - Math.exp(-.4 * t));
++    if (Math.abs(vx) > 1100) return false;
++    pet.vy = -u; pet.vx = vx; faceJumpDirection(vx); pet.airKind = 'jump'; pet.sqv -= 1.6;
++    setMode('air');
++    play('jump', 'move');
++    return true;
++  }
++
++  /**
++   * Local patch (cortico-world-perch): an idle jump that goes somewhere. Picks a landing spot a
++   * stride or two away — the desktop floor, or a window top low enough to hop onto — and launches
++   * on the arc that ends there. False when nothing is worth travelling to, and the caller falls
++   * back to the old in-place crouch.
++   */
++  function hopToReach() {
++    if (perchFeatures.autoRoamingJumps === false) return noJump('travel off');
++    if (T < hold || pet.fy < 60) return noJump('held');
++    const G2 = 2300, x0 = pet.x, y0 = pet.fy;
++    // The top underfoot, so a roaming jump does not simply land on the same ledge again.
++    const here = platformAt(x0, y0 - 2);
++    const dir = Math.random() < .5 ? -1 : 1;
++    /**
++     * Landing spots, weighted: another window top is worth more than the floor, so an idle jump
++     * actually changes window instead of only sliding along the current one. Both directions of
++     * height count — up onto a higher window, or down onto a lower one.
++     */
++    const cands = [];
++    for (const p of platforms()) {
++      if (here && Math.abs(p.y - here.y) < 4) continue;
++      const rise = y0 - p.y;
++      if (rise < -760 || rise > 1700) continue;
++      for (const [a, b] of p.spans ?? []) {
++        if (b - a < 120) continue;
++        // Both directions, so a window lying only to one side is still a candidate when the
++        // random direction points the other way.
++        for (const way of [dir, -dir]) {
++          const tx = clamp(x0 + way * rnd(170, 520), a + 26, b - 26);
++          if (Math.abs(tx - x0) < 150) continue;
++          cands.push({ tx, ty: p.y, weight: 4 });
++        }
++      }
++    }
++    const fx = clamp(x0 + dir * rnd(150, 340), minX(), maxX());
++    if (Math.abs(fx - x0) > 130 && Math.abs(y0 - floorY) > 40) cands.push({ tx: fx, ty: floorY, weight: 1 });
++    if (!cands.length) return noJump('no cands');
++    // A few tries, so one unreachable arc does not cancel the jump entirely.
++    for (let attempt = 0; attempt < 4 && cands.length; attempt++) {
++      const total = cands.reduce((n, c) => n + c.weight, 0);
++      let r = Math.random() * total, pick = cands[0];
++      for (const c of cands) { if ((r -= c.weight) <= 0) { pick = c; break; } }
++      const rise = y0 - pick.ty;
++      const u = Math.sqrt(2 * G2 * (Math.max(0, rise) + rnd(55, 110)));
++      const disc = u * u - 2 * G2 * rise;
++      if (disc > 0) {
++        const t = (u + Math.sqrt(disc)) / G2;
++        const vx = (pick.tx - x0) * .4 / (1 - Math.exp(-.4 * t));
++        if (Math.abs(vx) <= 1200) {
++          pet.lastRoam = { kind: 'travel', fromX: Math.round(x0), fromY: Math.round(y0), toX: Math.round(pick.tx), toY: Math.round(pick.ty), at: Math.round(T * 1000) };
++          pet.vy = -u; pet.vx = vx; faceJumpDirection(vx); pet.airKind = 'jump'; pet.sqv -= 1.4;
++          setMode('air');
++          play('jump', 'move');
++          return true;
++        }
++      }
++      cands.splice(cands.indexOf(pick), 1);
++    }
++    return noJump('no arc');
++  }
++
++  /** Direct control hook used by the perch World. */
++  function thunderJump(tx, ty, apex) { return jumpTo(Number(tx), Number(ty), Number(apex)); }
++
+   function decide() {
++    if (!hopAt) hopAt = T + rnd(8, 18);
++    if (T > hopAt && tryHopUp()) { hopAt = T + rnd(14, 30); return; }
+     const calm = roam === 'calm';
+-    const opts2 = [['walk', calm ? 10 : 28], ['run', calm ? 0 : 12], ['look', 14], ['jump', calm ? 2 : 8], ['sit', 16], ['expr', 12], ['wait', calm ? 30 : 10]]
++    // Jumping on her own is what this World is about, so it outweighs sitting a little more here.
++    const opts2 = [['walk', calm ? 10 : 28], ['run', calm ? 0 : 12], ['look', 14], ['jump', calm ? 6 : 15], ['sit', 14], ['expr', 12], ['wait', calm ? 30 : 10]]
+       .filter(o => o[1] > 0 && (o[0] !== pet.lastAct || o[0] === 'wait'));
+     let r = Math.random() * opts2.reduce((a, o) => a + o[1], 0), pick = 'wait';
+     for (const o of opts2) { if ((r -= o[1]) < 0) { pick = o[0]; break; } }
+@@ -391,6 +660,17 @@
+         const ramp = Math.min(1, mt / (run ? .35 : .25));
+         pet.speed = lerp(pet.speed, vT * smooth(ramp), ease(run ? 6 : 9, dt));
+         pet.x += dir * Math.min(dist, pet.speed * dt);
++        // the edge ran out: a window top that ends, or a part of it another window covers.
++        // Leap to the next top (or down to the desktop) instead of dropping off the cliff.
++        {
++          const under = groundAt(pet.x, pet.fy - 2);
++          if (under > pet.fy + 2) {
++            if (leapFromEdge(dir)) break;
++            pet.vy = 0; pet.vx = dir * Math.min(pet.speed, 60) * .5;
++            pet.airKind = 'drop'; setMode('air'); break;
++          }
++          if (under < pet.fy - 2) pet.fy = under;
++        }
+         const k = clamp(pet.speed / vMax, 0, 1);
+         strideT *= .4 + .6 * k; liftT *= .4 + .6 * k;
+         pet.phase += Math.PI * 2 * rate * dt * Math.max(.35, k);
+@@ -459,6 +739,7 @@
+         break;
+       }
+       case 'air': {
++        const prevFy = pet.fy;
+         pet.vy += 2300 * dt;
+         pet.vx *= Math.exp(-dt * .4);
+         pet.x += pet.vx * dt; pet.fy += pet.vy * dt;
+@@ -468,7 +749,11 @@
+         sqT = -Math.min(.12, Math.abs(pet.vy) / 6000);
+         tiltT = clamp(pet.vx * .025, -30, 30);
+         tk = 70; tc = 8;
+-        if (pet.fy >= floorY && pet.vy > 0) land();
++        if (pet.vy > 0) {
++          // land on the first surface the fall crosses, which may be a window top, not the floor
++          const surface = groundAt(pet.x, prevFy - .5);
++          if (pet.fy >= surface) { pet.landY = surface; land(); }
++        }
+         break;
+       }
+       case 'land': {
+@@ -623,10 +908,11 @@
+ 
+   function land() {
+     const impact = pet.vy, kind = pet.airKind;
+-    pet.fy = floorY; pet.vy = 0; pet.vx = 0;
++    pet.fy = pet.landY ?? floorY; pet.landY = null; pet.vy = 0; pet.vx = 0;
+     pet.sqv += clamp(impact * .0024, .8, 4.5);
+     play('land', 'move', kind !== 'jump' && impact > 1000);
+     dustAt(128, impact > 900 ? 7 : 3, 70);
++    rememberStanding();
+     if (kind === 'throw' && impact > 1000) { setMode('dizzy'); onEvent('touch', { kind: 'crash' }); return; }
+     setMode('land');
+     if (kind === 'throw') { pet.expr = 'surprised'; pet.exprUntil = T + .9; pet.nextAt = T + 2; }
+@@ -664,8 +950,9 @@
+     });
+ 
+     const footY = drag ? pet.dy + 220 * S * 1.09 : pet.fy;
+-    const k = clamp(1 - (floorY - footY) / 420, .3, 1);
+-    shadowEl.setAttribute('cx', f(AX)); shadowEl.setAttribute('cy', f(floorY - 2));
++    const shadowY = groundAt(AX, footY - 1);
++    const k = clamp(1 - (shadowY - footY) / 420, .3, 1);
++    shadowEl.setAttribute('cx', f(AX)); shadowEl.setAttribute('cy', f(shadowY - 2));
+     shadowEl.setAttribute('rx', f(72 * S * k * (1 + pet.sq * .5))); shadowEl.setAttribute('ry', f(10 * S * k + 1));
+     shadowEl.setAttribute('opacity', f(k));
+ 
+@@ -821,13 +1108,22 @@
+       moving: !!press || MOVING_MODES.has(pet.mode) || !!pet.pulse || Math.abs(pet.faceVis - pet.facing) > .05,
+       box: { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) },
+       hit: hits(), bubble: anchor(), side: { x: side.x, y: side.y, reach: 104 * S },
++      // Local patch (cortico-world-perch): where the last jump aimed, so the console can show it.
++      roam: pet.lastRoam ?? null,
++      // Why the last roaming jump did what it did, plus the terrain it saw: enough to tell a
++      // reachability problem from a choice problem without instrumenting the page again.
++      diag: {
++        hopWhy: pet.hopWhy ?? null,
++        fy: Math.round(pet.fy),
++        plats: platforms().map((p) => [Math.round(p.y), (p.spans ?? []).map(([a, b]) => [Math.round(a), Math.round(b)])]),
++      },
+     };
+   }
+ 
+   resize();
+   custom?.setSkin?.(skin);
+   return {
+-    pet, step, render, resize, act, setExpr, doWord, walkTo, stopWalk, toStage, hitPet, busy, layout,
++    pet, step, render, resize, act, setExpr, doWord, walkTo, stopWalk, thunderJump, toStage, hitPet, busy, layout,
+     pointerDown, pointerMove, pointerUp, pointerLeave, dropAt, shiftDrag,
+     get pressing() { return !!press; },
+     /** Pressed, carried, airborne, walking, running, dancing, turning round, or in a short gesture (nod, wave, bow…): motion that frames far apart show as jumps. */
+@@ -851,6 +1147,8 @@
+     get figure() { return custom; },
+     get skin() { return skin; },
+     setRoam(r) { roam = r; if (r !== 'off') pet.nextAt = T + 1; },
++    /** Local patch (cortico-world-perch): the console's switches, live (no restart). */
++    setPerchFeatures(f) { if (f && typeof f === 'object') perchFeatures = { ...perchFeatures, ...f }; },
+     get roam() { return roam; },
+     /** Outside orders keep free roaming quiet for `seconds`. */
+     holdRoam(seconds) { hold = Math.max(hold, T + seconds); },
+@@ -917,6 +1215,7 @@
+     layout: ctl.layout,
+     resize: ctl.resize,
+     do: ctl.doWord,
++    thunderJump: ctl.thunderJump,
+     words: [...KIT_EXPRESSIONS, ...KIT_MOTIONS, ...Object.keys(opts.words ?? {}).filter((w) => opts.words[w]?.expression || opts.words[w]?.motion)],
+     walk: (x, run, id) => ctl.walkTo(x, run, id),
+     stopWalk: (id) => ctl.stopWalk(id),
+@@ -937,6 +1236,7 @@
+     },
+     set(s) {
+       if (s.roam) ctl.setRoam(s.roam);
++      if (s.perchFeatures) ctl.setPerchFeatures(s.perchFeatures);
+       if (typeof s.hold === 'number') ctl.holdRoam(s.hold);
+       if (typeof s.dialogOpen === 'boolean') dialogOpen = s.dialogOpen;
+       if (typeof s.listening === 'boolean') ctl.setListening(s.listening);

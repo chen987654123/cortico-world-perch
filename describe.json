@@ -1,0 +1,77 @@
+{
+  "tools": [
+    {
+      "name": "perch_status",
+      "description": "Where the window-perching companion is right now: the platforms it can stand on and what it is standing on.",
+      "tags": [
+        "read"
+      ],
+      "parameters": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
+      },
+      "summary": {
+        "zh": "看 Coo 现在站在哪个窗口上、附近有哪些窗口顶面",
+        "en": "Where the pet stands and which window tops are nearby"
+      }
+    },
+    {
+      "name": "perch_hop",
+      "description": "雷霆大跳：让 Coo 跳向别处。不指定目标时自动跳到另一个窗口顶面或桌面底部（一定有水平位移，不是原地跳）。可以用 title 指定窗口标题的一段文字（落在该窗口顶面），或用 x(0~1 屏幕宽度比例) + y(距屏幕顶部的像素) 指定确切落点。height 是额外抬升高度，不能超过插件设置的最大跳跃高度。",
+      "tags": [
+        "write"
+      ],
+      "parameters": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "目标窗口标题里的片段，落在该窗口顶面。"
+          },
+          "x": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "落点横向位置，0 = 屏幕最左，1 = 最右（屏幕宽度比例）。"
+          },
+          "y": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 4000,
+            "description": "落点距屏幕顶部的像素；与 x 一起使用。"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "window",
+              "floor",
+              "point"
+            ],
+            "description": "auto=自动选窗口，floor=桌面底部，window=按 title，point=按 x/y。"
+          },
+          "height": {
+            "type": "number",
+            "minimum": 70,
+            "maximum": 2000
+          }
+        }
+      },
+      "summary": {
+        "zh": "让 Coo 雷霆大跳：自动跳到别的窗口，或按标题 / 坐标指定落点",
+        "en": "Thunder jump to another window, or to a window title / screen point"
+      }
+    }
+  ],
+  "events": [],
+  "prompts": [
+    {
+      "key": "worlds.perch.envPrompt",
+      "title": "雷霆大跳系统提示词",
+      "role": "envPrompt",
+      "content": "「雷霆大跳」是你在窗口顶面之间移动的方式，一定有水平位移，不是原地跳。AI 调用 perch_hop 时：\n\n- 不指定目标：Coo 自动跳到另一个窗口顶面或桌面底部。\n- 想让她跳到某个窗口：给出 title（窗口标题里的一段文字），落点在该窗口顶面。\n- 想让她跳到确定的点：给出 x（0~1，屏幕宽度比例）和 y（距屏幕顶部的像素）。\n\nheight 可选，表示额外抬升高度，不能超过当前允许的最大跳跃高度（{{maxJumpHeight}} 像素）。AI 大跳的冷却时间是 {{jumpCooldown}} 秒；控制面板用于调整功能参数，也可以手动指定落点后触发大跳。"
+    }
+  ]
+}

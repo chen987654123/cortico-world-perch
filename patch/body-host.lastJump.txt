@@ -1,0 +1,2 @@
+      /** The body's answer to the last thunder jump: { ok, err, mode, at } or null. */
+      get lastJump() { return lastJump; },

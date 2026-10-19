@@ -1,0 +1,3 @@
+      } else if (m.t === 'thunder-jump-done') {
+        // the body answered whether the jump could start; lastJump carries that to the page
+        lastJump = { ok: m.ok !== false, err: typeof m.err === 'string' ? m.err : null, mode: typeof m.mode === 'string' ? m.mode : null, at: performance.now() };

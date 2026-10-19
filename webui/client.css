@@ -1,0 +1,131 @@
+.perch-panel { display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
+
+.perch-msg {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-secondary, #5F5E5A);
+  font-variant-numeric: tabular-nums;
+}
+
+.perch-hint { font-size: 12px; line-height: 1.5; color: var(--color-text-tertiary, #888780); min-height: 1px; }
+.perch-hint.perch-hint-dirty { color: var(--color-text-warning, #B4690E); }
+
+/* ---------- sections ---------- */
+.perch-section { display: flex; flex-direction: column; gap: 6px; }
+.perch-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--color-text-tertiary, #888780);
+}
+.perch-section-note { font-size: 11px; line-height: 1.5; color: var(--color-text-tertiary, #A8A69E); }
+
+/* ---------- one-click compatibility patch ---------- */
+.perch-compat {
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--color-border, #D3D1C7);
+  border-radius: 8px;
+  background: var(--color-background-secondary, #F7F6F2);
+}
+.perch-compat-status { font-size: 12px; line-height: 1.5; color: var(--color-text-primary, #2C2C2A); }
+.perch-compat-status.perch-compat-warn { color: var(--color-text-warning, #B4690E); }
+
+/* ---------- switches ---------- */
+.perch-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--color-background-secondary, #F7F6F2);
+  cursor: pointer;
+}
+.perch-check { margin: 2px 0 0; width: 14px; height: 14px; flex: none; accent-color: var(--color-accent, #3B7DD8); }
+.perch-toggle-text { display: flex; flex-direction: column; gap: 2px; font-size: 12px; line-height: 1.45; color: var(--color-text-primary, #2C2C2A); }
+.perch-toggle-hint { font-size: 11px; color: var(--color-text-tertiary, #888780); }
+
+/* ---------- numbers ---------- */
+.perch-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.perch-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--color-background-secondary, #F7F6F2);
+}
+.perch-field-cap { font-size: 11px; color: var(--color-text-tertiary, #888780); }
+.perch-input {
+  width: 100%;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--color-border, #D3D1C7);
+  border-radius: 5px;
+  background: var(--color-background-primary, #fff);
+  color: var(--color-text-primary, #2C2C2A);
+}
+
+.perch-select { width: 100%; height: 26px; padding: 2px 4px; }
+
+/* ---------- title filter ---------- */
+.perch-titles {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 6px 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  font-family: inherit;
+  border: 1px solid var(--color-border, #D3D1C7);
+  border-radius: 6px;
+  background: var(--color-background-primary, #fff);
+  color: var(--color-text-primary, #2C2C2A);
+}
+
+/* ---------- editable prompt template ---------- */
+.perch-prompt-section { border-top: 1px solid var(--color-border, #D3D1C7); padding-top: 10px; }
+.perch-prompt {
+  width: 100%;
+  min-height: 150px;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.55;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  border: 1px solid var(--color-border, #D3D1C7);
+  border-radius: 6px;
+  background: var(--color-background-primary, #fff);
+  color: var(--color-text-primary, #2C2C2A);
+}
+.perch-prompt:focus { outline: 2px solid color-mix(in srgb, var(--color-accent, #3B7DD8) 35%, transparent); }
+.perch-prompt-note { font-size: 11px; line-height: 1.5; color: var(--color-text-tertiary, #888780); }
+.perch-prompt-note.perch-prompt-note-dirty { color: var(--color-text-warning, #B4690E); }
+.perch-prompt-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ---------- platform list ---------- */
+.perch-list { display: flex; flex-direction: column; gap: 4px; }
+
+.perch-row {
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--color-background-secondary, #F7F6F2);
+  color: var(--color-text-secondary, #5F5E5A);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.perch-row.perch-head {
+  background: transparent;
+  padding-left: 0;
+  color: var(--color-text-tertiary, #888780);
+}
+
+.perch-row.perch-empty { background: transparent; padding-left: 0; }
+
+.perch-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }

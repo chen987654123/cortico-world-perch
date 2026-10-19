@@ -1,0 +1,7 @@
+    else if (m.t === 'thunder-jump') {
+      // report whether the jump could start: a false here is the pet declining (mid-air, dragging, or
+      // a target the arc cannot reach), and the page has no other way to tell that from a silent no-op
+      let ok = false, err = null;
+      try { ok = body.thunderJump?.(m.x, m.y, m.apex) !== false; }
+      catch (e) { err = e instanceof Error ? e.message : String(e); ok = false; }
+      post({ t: 'thunder-jump-done', ok, err, mode: body.layout?.().mode ?? null });

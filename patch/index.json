@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "verified": "Coopanion 0.2.x (electron 44, cortico-world-desktop-pet shipped with the app)",
+  "note": "Adds a terrain hook and a jump command to Coopanion's built-in desktop pet. Every file is backed up as <name>.perch-orig first; 'restore' puts them back.",
+  "files": [
+    {
+      "path": "src/server.ts",
+      "marker": "local patch (cortico-world-perch)",
+      "diff": "server.ts.diff"
+    },
+    {
+      "path": "web/pet-app.js",
+      "marker": "take=1",
+      "diff": "pet-app.js.diff"
+    },
+    {
+      "path": "web/kit/body.js",
+      "marker": "groundAt",
+      "diff": "body.js.diff"
+    },
+    {
+      "path": "web/body-host.js",
+      "marker": "thunder-jump",
+      "ops": [
+        {
+          "anchor": "      get z() { return z; },",
+          "position": "before",
+          "insertFile": "body-host.lastJump.txt"
+        },
+        {
+          "anchor": "      do: (word) => post({ t: 'do', word }),",
+          "position": "after",
+          "insertFile": "body-host.thunderJump.txt"
+        },
+        {
+          "anchor": "      } else if (m.t === 'frame' && ready) {        layout = readLayout(m.layout, size);",
+          "position": "before",
+          "insertFile": "body-host.done.txt"
+        },
+        {
+          "anchor": "    bubble: pt(l.bubble), side: { ...pt(l.side), reach: clampTo(num(l.side?.reach), 0, side / 2) },",
+          "position": "after",
+          "insertFile": "body-host.roam.txt"
+        }
+      ]
+    },
+    {
+      "path": "web/figure-frame.js",
+      "marker": "thunder-jump",
+      "ops": [
+        {
+          "anchor": "    } else if (m.t === 'do') body.do(m.word);",
+          "position": "after",
+          "insertFile": "figure-frame.thunder.txt"
+        }
+      ]
+    },
+    {
+      "path": "host/preload.cjs",
+      "marker": "pet:screen",
+      "ops": [
+        {
+          "anchor": "  onFloor: (cb) => ipcRenderer.on('pet:floor', (_e, below) => cb(Number(below) || 0)),",
+          "position": "after",
+          "insertFile": "preload.screen.txt"
+        }
+      ]
+    },
+    {
+      "path": "host/electron-main.cjs",
+      "marker": "pet:screen",
+      "ops": [
+        {
+          "anchor": "    win.webContents.send('pet:floor', below);",
+          "position": "after",
+          "insertFile": "electron.cover.txt"
+        },
+        {
+          "anchor": "    win.webContents.on('did-finish-load', () => { win.webContents.setZoomLevel(0); overlay.pageLoaded(); win.webContents.send('pet:floor', coverArea(display()).below); });",
+          "position": "replace",
+          "insertFile": "electron.didfinish.txt"
+        }
+      ]
+    }
+  ]
+}

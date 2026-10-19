@@ -1,0 +1,13 @@
+    win.webContents.on('did-finish-load', () => {
+      win.webContents.setZoomLevel(0);
+      overlay.pageLoaded();
+      const d = display(), area = coverArea(d);
+      win.webContents.send('pet:floor', area.below);
+      const nativeBounds = screen.dipToScreenRect(win, d.bounds);
+      const nativeWork = screen.dipToScreenRect(win, d.workArea);
+      win.webContents.send('pet:screen', {
+        x: nativeBounds.x, y: nativeBounds.y, width: nativeBounds.width, height: nativeBounds.height,
+        scaleFactor: d.scaleFactor,
+        workArea: { x: nativeWork.x, y: nativeWork.y, width: nativeWork.width, height: nativeWork.height },
+      });
+    });

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="窗边客">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12212B"/>
+      <stop offset="1" stop-color="#1D3A47"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3FBFA0"/>
+      <stop offset="1" stop-color="#1F8A70"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- a window: frame, title bar, and the ledge the pet stands on -->
+  <rect x="64" y="150" width="384" height="268" rx="20" fill="#0C1720" stroke="#2E5566" stroke-width="10"/>
+  <rect x="64" y="150" width="384" height="44" rx="20" fill="#17303C"/>
+  <circle cx="96" cy="172" r="7" fill="#E4573D"/>
+  <circle cx="120" cy="172" r="7" fill="#F5B301"/>
+  <circle cx="144" cy="172" r="7" fill="#3FBFA0"/>
+  <rect x="64" y="194" width="384" height="8" fill="#2E5566"/>
+  <!-- ledge highlight -->
+  <rect x="64" y="194" width="384" height="6" fill="#5FE0BE" opacity="0.7"/>
+  <!-- the companion, standing on the ledge -->
+  <g transform="translate(256 186)">
+    <ellipse cx="0" cy="46" rx="46" ry="10" fill="#000" opacity="0.28"/>
+    <ellipse cx="0" cy="-16" rx="62" ry="58" fill="url(#body)"/>
+    <ellipse cx="-4" cy="-2" rx="26" ry="27" fill="#E9F7F1"/>
+    <ellipse cx="-23" cy="-44" rx="9" ry="13" transform="rotate(-16 -23 -44)" fill="#3FBFA0"/>
+    <ellipse cx="23" cy="-44" rx="9" ry="13" transform="rotate(16 23 -44)" fill="#3FBFA0"/>
+    <ellipse cx="-16" cy="-22" rx="8" ry="9" fill="#0B2B22"/>
+    <ellipse cx="16" cy="-22" rx="8" ry="9" fill="#0B2B22"/>
+    <circle cx="-13" cy="-25" r="3" fill="#fff"/>
+    <circle cx="19" cy="-25" r="3" fill="#fff"/>
+    <!-- lightning emblem on the belly -->
+    <path d="M2 6 L-13 30 L-1 30 L-7 48 L16 22 L3 22 Z" fill="#F5B301"/>
+  </g>
+  <!-- a jump trail: the leap this world is about -->
+  <path d="M96 420 C 168 344, 200 300, 246 258" fill="none" stroke="#F5B301" stroke-width="8" stroke-linecap="round" stroke-dasharray="26 22" opacity="0.85"/>
+  <path d="M246 258 l 16 -30 l -34 6 z" fill="#F5B301" opacity="0.9"/>
+</svg>

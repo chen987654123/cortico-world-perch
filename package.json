@@ -1,0 +1,51 @@
+{
+  "name": "cortico-world-perch",
+  "version": "0.2.3",
+  "description": "Coo walks along the top edge of any window and thunder-jumps between windows and the desktop floor.",
+  "type": "module",
+  "main": "./src/index.js",
+  "license": "MIT",
+  "keywords": ["cortico", "cortico-world", "world", "companion", "desktop-pet", "windows", "coopanion"],
+  "os": ["win32"],
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "src",
+    "web",
+    "webui",
+    "assets",
+    "patch",
+    "ENV_PROMPT.md",
+    "README.md",
+    "CHANGELOG.md",
+    "describe.json"
+  ],
+  "cortico": {
+    "kind": "world",
+    "api": 6,
+    "displayName": "雷霆大跳",
+    "icon": "assets/icon.svg",
+    "describe": "describe.json",
+    "tags": ["apps", "external-setup", "experimental", "sensitive-data"],
+    "locales": {
+      "zh": {
+        "displayName": "雷霆大跳",
+        "description": "让 Coo 站在任意窗口的顶边上行走，并在窗口之间雷霆大跳；支持多屏幕与指定落点。"
+      },
+      "en": {
+        "displayName": "Thunder Jump",
+        "description": "Coo walks along the top edge of your windows and thunder-jumps between them; multi-monitor, with a chosen landing spot."
+      }
+    },
+    "webUiClient": "webui/client.js",
+    "webUiStyle": "webui/client.css"
+  },
+  "scripts": {
+    "describe": "node scripts/make-describe.mjs",
+    "check": "node scripts/check-package.mjs"
+  },
+  "dependencies": {
+    "koffi": "3.3.1"
+  }
+}
