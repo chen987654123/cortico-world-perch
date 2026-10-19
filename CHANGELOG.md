@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.6
+
+- Icon: minimal square crop of the original screenshot (centre 724×724, no content trimmed away),
+  scaled to 512×512. Replaces the tighter close-up used in 0.2.5. No behaviour change.
+
 ## 0.2.5
 
 - New icon: the pet's face instead of the drawn placeholder. No behaviour change.
