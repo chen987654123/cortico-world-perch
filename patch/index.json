@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "verified": "Coopanion 0.2.x (electron 44, cortico-world-desktop-pet shipped with the app)",
-  "note": "Adds a terrain hook and a jump command to Coopanion's built-in desktop pet. Every file is backed up as <name>.perch-orig first; 'restore' puts them back.",
+  "verified": "Coopanion 0.2.5, cortico-world-desktop-pet 0.2.0 (2026-10-20)",
+  "note": "Adds a terrain hook and a jump command to Coopanion's built-in desktop pet. Every file is backed up as <name>.perch-orig first; 'restore' puts them back. The built-in pet ships inside the app: a Coopanion update replaces these files and the patch must be applied again. Anchors are matched one line at a time.",
   "files": [
     {
       "path": "src/server.ts",
@@ -11,7 +11,28 @@
     {
       "path": "web/pet-app.js",
       "marker": "take=1",
-      "diff": "pet-app.js.diff"
+      "ops": [
+        {
+          "anchor": "let below = 0;",
+          "position": "after",
+          "insertFile": "pet-app.screenVar.txt"
+        },
+        {
+          "anchor": "const floorGap = () => (host ? 2 + below : 48);",
+          "position": "after",
+          "insertFile": "pet-app.terrain.txt"
+        },
+        {
+          "anchor": "const bounds = () => ({ W: innerWidth, H: innerHeight, floorY: innerHeight - floorGap(), S: .42 * prefs.scale });",
+          "position": "replace",
+          "insertFile": "pet-app.bounds.txt"
+        },
+        {
+          "anchor": "host?.onFloor?.((px) => { below = px; body?.set({ bounds: bounds() }); });",
+          "position": "after",
+          "insertFile": "pet-app.onScreen.txt"
+        }
+      ]
     },
     {
       "path": "web/kit/body.js",
@@ -33,7 +54,7 @@
           "insertFile": "body-host.thunderJump.txt"
         },
         {
-          "anchor": "      } else if (m.t === 'frame' && ready) {        layout = readLayout(m.layout, size);",
+          "anchor": "      } else if (m.t === 'frame' && ready) {",
           "position": "before",
           "insertFile": "body-host.done.txt"
         },
@@ -76,7 +97,7 @@
           "insertFile": "electron.cover.txt"
         },
         {
-          "anchor": "    win.webContents.on('did-finish-load', () => { win.webContents.setZoomLevel(0); overlay.pageLoaded(); win.webContents.send('pet:floor', coverArea(display()).below); });",
+          "anchor": "    win.webContents.on('did-finish-load', () => { win.webContents.setZoomLevel(0); overlay.pageLoaded(); watchWindows(false); win.webContents.send('pet:floor', coverArea(display()).below); });",
           "position": "replace",
           "insertFile": "electron.didfinish.txt"
         }

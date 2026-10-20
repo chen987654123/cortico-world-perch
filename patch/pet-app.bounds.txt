@@ -1,0 +1,1 @@
+const bounds = () => ({ W: innerWidth, H: innerHeight, floorY: innerHeight - floorGap(), S: .42 * prefs.scale, platforms: terrain, rects: windowRects });

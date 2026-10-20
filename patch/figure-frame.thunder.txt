@@ -5,3 +5,4 @@
       try { ok = body.thunderJump?.(m.x, m.y, m.apex) !== false; }
       catch (e) { err = e instanceof Error ? e.message : String(e); ok = false; }
       post({ t: 'thunder-jump-done', ok, err, mode: body.layout?.().mode ?? null });
+    }

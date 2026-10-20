@@ -1,0 +1,7 @@
+host?.onScreen?.((screen) => {
+  if (!screen || !Number.isFinite(Number(screen.scaleFactor))) return;
+  petScreen = screen;
+  terrainKey = '';
+  body?.set({ bounds: bounds() });
+  void pollTerrain();
+});
