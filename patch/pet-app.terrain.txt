@@ -1,10 +1,10 @@
 /**
- * Local patch (cortico-world-perch): the window tops the pet may stand on, polled from the perch
- * World's terrain service and converted from physical pixels to this page's CSS pixels. Empty
- * when that World is off, and then the pet just walks the floor as before.
+ * Local patch (cortico-world-perch): the window tops the pet may stand on. They come from the
+ * window process itself (`pet:windows`), which converts them against this pet window's own origin
+ * and display, so a second monitor at a negative origin or with another scale needs no work here.
  */
 let terrain = [];
-let terrainKey = '';
+let featuresKey = '';
 let windowRects = [];
 // A World command may arrive before the iframe body is ready (or while Coo is being dragged).
 // Keep it until the body accepts it instead of consuming it as a silent no-op.
@@ -23,21 +23,17 @@ async function pollTerrain() {
   try {
     const res = await fetch(TERRAIN_URL, { cache: 'no-store', headers: PAGE_HEADERS });
     const data = await res.json();
+    // The World sends jump targets in physical screen pixels; these two turn them back into page
+    // coordinates. The tops themselves no longer come from here: the window process knows them
+    // better, because it converts them against this window's own origin and display.
     const d = petScreen?.scaleFactor || devicePixelRatio || 1;
     const ox = data?.area?.x ?? petScreen?.workArea?.x ?? 0, oy = data?.area?.y ?? petScreen?.workArea?.y ?? 0;
-    terrain = (Array.isArray(data?.platforms) ? data.platforms : []).map((p) => ({
-      y: (p.y - oy) / d,
-      spans: (Array.isArray(p.spans) ? p.spans : []).map((s) => [(s[0] - ox) / d, (s[1] - ox) / d]),
-    }));
-    windowRects = (Array.isArray(data?.rects) ? data.rects : []).map((r) => ({
-      x0: (r.x0 - ox) / d, y0: (r.y0 - oy) / d, x1: (r.x1 - ox) / d, y1: (r.y1 - oy) / d,
-    }));
     const featureSettings = data?.settings ?? {};
-    const key = JSON.stringify([terrain, windowRects, featureSettings]);
-    // only remember the terrain as delivered once a body was there to take it: the pack may still
-    // be loading, and a set() swallowed then would never be retried
-    if (key !== terrainKey && body) {
-      terrainKey = key;
+    // only remember the settings as delivered once a body was there to take them: the pack may
+    // still be loading, and a set() swallowed then would never be retried
+    const key = JSON.stringify(featureSettings);
+    if (key !== featuresKey && body) {
+      featuresKey = key;
       body.set({ bounds: bounds(), perchFeatures: featureSettings });
     }
     // Orders from the perch World. The World sends `command` as an object
@@ -114,6 +110,27 @@ async function pollTerrain() {
 }
 setInterval(pollTerrain, 500);
 pollTerrain();
+// The window tops, straight from the window process. Every ledge is already in this page's
+// pixels — the window process subtracted this pet window's own origin and clipped to the display
+// the window covers — so a second monitor needs no conversion and no guessing about which one
+// the pet is on.
+host?.onWindows?.((list) => {
+  if (!Array.isArray(list)) return;
+  const tops = [];
+  for (const l of list) {
+    const y = Number(l?.y), a = Number(l?.x0), b = Number(l?.x1);
+    if (!Number.isFinite(y) || !Number.isFinite(a) || !Number.isFinite(b) || b <= a) continue;
+    const last = tops[tops.length - 1];
+    if (last && last.y === y) last.spans.push([a, b]);
+    else tops.push({ y, spans: [[a, b]] });
+  }
+  terrain = tops;
+  windowRects = [];
+  body?.set({ bounds: bounds() });
+});
+// Coo's pack does not declare `needs: windows`, so the desktop pet keeps that sampler off. This
+// World does want the tops, so it turns the same sampler on; the call is cheap and idempotent.
+if (host) setInterval(() => host.watchWindows?.(true), 4000);
 // where the body is, for the perch World's status tool (and for checking the chain from outside)
 function reportState() {
   // only the pet window reports where the pet is; a preview tab has its own body on another stage
