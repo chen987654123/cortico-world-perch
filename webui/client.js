@@ -54,7 +54,6 @@ export default {
         const root = ctx.root;
         root.classList.add('perch-panel');
 
-        const status = msgline(zh ? '读取中…' : 'Loading…');
         const hint = h('div', 'perch-hint', '');
         const state = { paused: false };
         // once the person touches a control the 1.5s poll stops writing back into the form
@@ -178,11 +177,6 @@ export default {
         prompt.addEventListener('input', () => { promptDirty = true; promptNote.textContent = zh ? '模板有未保存修改' : 'Template has unsaved changes'; promptNote.classList.add('perch-prompt-note-dirty'); });
         promptSection.append(prompt, promptNote, promptActions);
 
-        /* ---------- platform list ---------- */
-        const listSection = h('div', 'perch-section');
-        const list = h('div', 'perch-list');
-        listSection.append(h('div', 'perch-section-title', zh ? '可站立窗口' : 'Window tops'), list);
-
         /* ---------- actions ---------- */
         const actions = h('div', 'perch-actions');
         const btnApply = button(zh ? '应用' : 'Apply', () => void apply());
@@ -192,7 +186,7 @@ export default {
         const btnRefresh = button(zh ? '刷新' : 'Refresh', () => void refresh());
         actions.append(btnApply, btnDefaults, btnHop, btnPause, btnRefresh);
 
-        root.append(sheet({ title: zh ? '雷霆大跳' : 'Thunder Jump', en: 'Thunder Jump' }), status, hint, compatSection, featureSection, numberSection, filterSection, targetSection, promptSection, listSection, actions);
+        root.append(sheet({ title: zh ? '雷霆大跳' : 'Thunder Jump', en: 'Thunder Jump' }), hint, compatSection, featureSection, numberSection, filterSection, targetSection, promptSection, actions);
 
         function markDirty() {
           dirty = true;
@@ -210,17 +204,6 @@ export default {
           state.paused = !!d?.paused;
           const s = d?.settings ?? {};
 
-          const pet = d?.pet;
-          if (state.paused) {
-            status.textContent = zh ? '已暂停：Coo 只在地板上走' : 'Paused: the pet walks the floor only';
-          } else if (pet) {
-            const where = pet.platform && pet.platform !== 'desktop' ? pet.platform : (zh ? '桌面底部' : 'desktop floor');
-            status.textContent = zh
-              ? `Coo：x=${pet.x} y=${pet.y} · ${pet.mode} · 站在「${where}」`
-              : `Pet: x=${pet.x} y=${pet.y} · ${pet.mode} · on "${where}"`;
-          } else {
-            status.textContent = zh ? '还没收到桌宠的位置' : 'No position from the pet yet';
-          }
           btnPause.textContent = state.paused ? (zh ? '恢复' : 'Resume') : (zh ? '暂停' : 'Pause');
 
           // never overwrite what the person is editing
@@ -263,19 +246,6 @@ export default {
             }
             if (keep && platformsNow.some((p) => p.title === keep)) targetWindow.value = keep;
           }
-          const lp = d?.lastPick;
-          if (lp && Number.isFinite(lp.toX)) {
-            status.textContent += zh
-              ? ` · 上次落点 x=${lp.toX} y=${lp.toY}（从 x=${lp.fromX} 起跳）`
-              : ` · last landing x=${lp.toX} y=${lp.toY} (from x=${lp.fromX})`;
-          }
-          const lr = d?.lastRoam;
-          if (lr && Number.isFinite(lr.toX)) {
-            const kind = lr.kind === 'window' ? (zh ? '上窗' : 'up') : lr.kind === 'travel' ? (zh ? '跨窗' : 'across') : (zh ? '命令' : 'order');
-            status.textContent += zh
-              ? ` · 上次闲逛跳（${kind}）x=${lr.fromX} → x=${lr.toX}，y=${lr.fromY} → y=${lr.toY}`
-              : ` · last roam jump (${kind}) x=${lr.fromX} → x=${lr.toX}, y=${lr.fromY} → y=${lr.toY}`;
-          }
           const lj = d?.lastJump;
           if (lj && lj.ok === false) {
             hint.textContent = zh
@@ -284,16 +254,6 @@ export default {
             hint.classList.add('perch-hint-dirty');
           }
 
-          list.replaceChildren();
-          const rows = platformsNow;
-          if (!rows.length) {
-            list.append(h('div', 'perch-row perch-empty', zh ? '当前没有可站立的窗口' : 'No window tops to stand on'));
-            return;
-          }
-          list.append(h('div', 'perch-row perch-head', zh ? `共 ${rows.length} 个` : `${rows.length} found`));
-          for (const p of rows.slice(0, 8)) {
-            list.append(h('div', 'perch-row', `y=${p.y} · ${p.width}px · ${p.title}`));
-          }
         }
 
         function formValues() {
@@ -494,7 +454,7 @@ export default {
 
         async function load() {
           try { render(await ctx.invoke('state')); }
-          catch (error) { status.textContent = error instanceof Error ? error.message : String(error); }
+          catch (error) { hint.textContent = error instanceof Error ? error.message : String(error); hint.classList.add('perch-hint-dirty'); }
         }
 
         void load();

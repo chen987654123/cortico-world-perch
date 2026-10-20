@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.8
+
+The panel stops showing two things it could no longer get right.
+
+- The pet's position line and the "window tops" list are gone. Both were fed by the World's own
+  window enumeration, which measures one display at a time; the pet takes its tops from the
+  desktop pet itself now (`pet:windows`), so a second list could only disagree with what it
+  actually stands on.
+- The destination picker still lists the tops of the display the pet is on.
+- The position report is also fixed. It is a JSON POST, so the browser sends an `OPTIONS`
+  preflight first, and the World answered it without `Access-Control-Allow-Methods` — the POST
+  was never sent at all. That is why the World could not tell which display the pet was on and
+  kept measuring window tops against the primary one.
+
 ## 0.2.7
 
 The compatibility patch keeps working after a Coopanion update.
