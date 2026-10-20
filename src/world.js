@@ -52,6 +52,8 @@ export class PerchWorld {
     aiThunderJump: true,
   };
   #lastAskAt = 0;
+  #lastPetPage = null;
+  #lastPetWhy = null;
   #lastTakeLogAt = 0;
   #lastJumpCommandAt = 0;
   #screen = null;
@@ -536,6 +538,10 @@ export class PerchWorld {
     // the desktop pet's page lives on another origin and polls /api/terrain
     res.setHeader('access-control-allow-origin', '*');
     res.setHeader('access-control-allow-headers', 'content-type, x-perch-page, x-perch-host');
+    // A JSON POST from the pet page is not a simple request: the browser asks with OPTIONS first,
+    // and without this header it refuses to send the POST at all — the World then never learns
+    // where the pet is and measures every window top against the wrong display.
+    res.setHeader('access-control-allow-methods', 'GET, POST, OPTIONS');
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
     try {
       if (url.pathname === '/api/terrain' || url.pathname === '/api/platforms') {
@@ -555,6 +561,12 @@ export class PerchWorld {
       }
       if (url.pathname === '/api/pet' && req.method === 'POST') {
         this.#state = await body(req);
+        const page = this.#state?.page ?? null, why = this.#state?.why ?? '';
+        if (page !== this.#lastPetPage || why !== this.#lastPetWhy) {
+          this.#lastPetPage = page;
+          this.#lastPetWhy = why;
+          this.#log?.info?.(`perch: pet report page=${page ?? '-'}${why ? ` — no position (${why})` : ''}`);
+        }
         this.#rememberScreen();
         return json(res, { ok: true });
       }
