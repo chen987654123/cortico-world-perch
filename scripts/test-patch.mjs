@@ -34,15 +34,17 @@ await rm(scratch, { recursive: true, force: true });
 await mkdir(scratch, { recursive: true });
 await copyFile(join(real.dir, 'package.json'), join(scratch, 'package.json'));
 
-// The shipped version of each file: the .bak where we have one, otherwise the inserted blocks removed.
+// The shipped version of each file: the .perch-orig backup the patcher itself writes, else the
+// older .bak, else the inserted blocks removed (which can only guess where a block starts).
 const shipped = new Map();
 for (const entry of index.files) {
   const live = join(real.dir, entry.path);
   const target = join(scratch, entry.path);
   await mkdir(dirname(target), { recursive: true });
+  const orig = `${live}.perch-orig`;
   const bak = `${live}.bak`;
-  if (existsSync(bak)) {
-    await copyFile(bak, target);
+  if (existsSync(orig) || existsSync(bak)) {
+    await copyFile(existsSync(orig) ? orig : bak, target);
     shipped.set(entry.path, sha(await readFile(target)));
     continue;
   }

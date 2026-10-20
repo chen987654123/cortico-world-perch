@@ -119,20 +119,25 @@ function reportState() {
   // only the pet window reports where the pet is; a preview tab has its own body on another stage
   if (!host) return;
   const l = body?.layout;
-  if (!l) return;
+  // A body that never mounts would leave the World without a position, and then every window top is
+  // measured against the wrong monitor. Report the reason once instead of going silent.
+  const why = l ? '' : body ? 'no-layout' : 'no-body';
+  if (!l && reportState.lastWhy === why) return;
+  reportState.lastWhy = why;
   fetch('http://127.0.0.1:47650/api/pet', {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      x: Math.round(l.x),
-      y: Math.round(l.box.y + l.box.h),
+      x: Math.round(l?.x ?? NaN),
+      y: Math.round(l?.box ? l.box.y + l.box.h : NaN),
       screen: petScreen ? { x: petScreen.x, y: petScreen.y, scaleFactor: petScreen.scaleFactor } : null,
-      mode: l.mode,
+      mode: l?.mode ?? null,
       terrain: terrain.length,
       jump: body?.lastJump ?? null,
       pick: lastPick,
-      roam: l.roam ?? null,
-      diag: l.diag ?? null,
+      roam: l?.roam ?? null,
+      diag: l?.diag ?? null,
       debug: jumpDebug,
+      why,
       page: PAGE_ID,
     }),
   }).catch(() => {});
