@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.7
+
+The compatibility patch keeps working after a Coopanion update.
+
+- Coopanion 0.2.5 replaced the built-in pet's files, and three of the seven patch
+  targets stopped matching. All three are fixed: `web/pet-app.js` now uses four anchored
+  inserts instead of a diff (the diff parser dropped blank context lines), the
+  `web/body-host.js` frame anchor is a single line again (anchors are matched line by
+  line, so a two-line anchor can never hit), and the `host/electron-main.cjs` anchor
+  follows the new line while keeping the newly added `watchWindows(false)` call.
+- `patch/figure-frame.thunder.txt` was missing its closing brace, which would have
+  produced a file that fails to parse.
+- Applying twice is a no-op: the second run reports every file as already patched and
+  leaves them byte-identical.
+
+Note: the built-in pet ships inside Coopanion, so each Coopanion update replaces those
+files. Press "apply compatibility patch" again after upgrading the app.
+
 ## 0.2.6
 
 - Icon: minimal square crop of the original screenshot (centre 724×724, no content trimmed away),
